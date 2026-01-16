@@ -1,0 +1,66 @@
+pipeline {
+  agent any
+
+  tools {
+    jdk 'jdk'
+    maven 'maven'
+  }
+
+  stages {
+
+    stage('Checkout Code') {
+      steps {
+        echo 'Pulling from Github'
+        git branch: 'main',
+            credentialsId: 'mygithubcred',
+            url: 'https://github.com/Vicky8174/indiaproj.git'
+      }
+    }
+
+    stage('Test Code') {
+      steps {
+        echo 'JUNIT Test case execution started'
+        bat 'mvn clean test'
+      }
+      post {
+        always {
+          junit '**/target/surefire-reports/*.xml'
+          echo 'Test Run Completed!'
+        }
+      }
+    }
+
+    stage('Build Project') {
+      steps {
+        echo 'Building Java project'
+        bat 'mvn clean package -DskipTests'
+      }
+    }
+
+    stage('Build the Docker Image') {
+      steps {
+        echo 'Building Docker Image'
+        bat 'docker build -t indiaproj:1.0 .'
+      }
+    }
+
+    stage('Run Docker Container') {
+      steps {
+        echo 'Running Java Application in Docker'
+        bat '''
+        docker rm -f indiaproj-container || exit 0
+        docker run --name indiaproj-container indiaproj:1.0
+        '''
+      }
+    }
+  }
+
+  post {
+    success {
+      echo 'Build, Test, Docker Image & Run SUCCESSFUL!'
+    }
+    failure {
+      echo 'OOPS!!! Pipeline FAILED.'
+    }
+  }
+}
