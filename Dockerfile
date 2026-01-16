@@ -1,7 +1,7 @@
-FROM openjdk:21-jdk
+FROM eclipse-temurin:21-jdk
 
 WORKDIR /app
 
-COPY target/indiaproj-1.0.jar /app/MainClass.jar
+COPY target/indiaproj-1.0.jar app.jar
 
-ENTRYPOINT ["java","-jar","/app/MainClass.jar"]
+ENTRYPOINT ["java","-jar","app.jar"]
