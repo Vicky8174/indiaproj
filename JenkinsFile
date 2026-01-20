@@ -42,7 +42,7 @@ pipeline {
             steps {
                 echo 'Pushing Docker Image'
                 withCredentials([usernamePassword(
-                        credentialsId: 'dockerhubwd',
+                        credentialsId: 'dockerhubpwd',
                         usernameVariable: 'DOCKER_USERNAME',
                         passwordVariable: 'DOCKER_PASSWORD'
                 )]) {
