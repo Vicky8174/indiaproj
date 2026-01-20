@@ -7,10 +7,10 @@ pipeline {
     }
 
     environment {
-        DOCKER_USER = 'holyyyycow'
-        IMAGE_NAME  = 'indiaproj'
-        IMAGE_TAG   = '1.0'
-        FULL_IMAGE  = 'holyyyycow/indiaproj:1.0'
+        DOCKERHUB_USER = "holyycow"
+        IMAGE_NAME = "indiaproj"
+        IMAGE_TAG = "1.0"
+        FULL_IMAGE = "holyycow/indiaproj:1.0"
     }
 
     stages {
@@ -33,62 +33,62 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                echo 'Building Docker image'
-                bat "docker build -t %FULL_IMAGE% ."
+                echo 'Building Docker Image'
+                bat 'docker build -t %FULL_IMAGE% .'
             }
         }
 
         stage('Push Docker Image to DockerHub') {
             steps {
-                echo 'Pushing Docker image'
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'dockerhubpwd',
+                echo 'Pushing Docker Image'
+                withCredentials([usernamePassword(
+                        credentialsId: 'dockerhubwd',
                         usernameVariable: 'DOCKER_USERNAME',
                         passwordVariable: 'DOCKER_PASSWORD'
-                    )
-                ]) {
-                    bat """
-                    echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin
-                    docker push %FULL_IMAGE%
-                    """
+                )]) {
+                    bat '''
+                        echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin
+                        docker push %FULL_IMAGE%
+                    '''
                 }
             }
         }
 
-        stage('Deploy to Minikube') {
+        stage('Deploy to Kubernetes (Minikube)') {
             steps {
-                echo 'Reset & Deploy to Minikube'
-                bat """
-                minikube delete
-                minikube start --driver=docker --force
+                echo 'Deploying to Kubernetes'
+                bat '''
+                    minikube delete
+                    minikube start --driver=docker
 
-                kubectl config use-context minikube
+                    minikube image load %FULL_IMAGE%
 
-                minikube image load %FULL_IMAGE%
+                    kubectl delete deployment indiaproj-deployment --ignore-not-found
+                    kubectl delete service indiaproj-service --ignore-not-found
 
-                kubectl delete deployment indiaproj-deployment --ignore-not-found
-                kubectl delete service indiaproj-service --ignore-not-found
+                    kubectl apply -f deployment.yaml
+                    kubectl apply -f services.yaml
 
-                kubectl apply -f deployment.yaml
-                kubectl apply -f services.yaml
+                    kubectl get pods
+                    kubectl get services
 
-                kubectl get pods
-                kubectl get services
-                
-                minikube addons enable dashboard
-                minikube dashboard
-                """
+                    minikube addons enable dashboard
+
+                    echo ==============================
+                    echo MINIKUBE DASHBOARD URL
+                    minikube dashboard --url
+                    echo ==============================
+                '''
             }
         }
     }
 
     post {
         success {
-            echo 'CI/CD + MINIKUBE DEPLOY SUCCESSFUL 🚀'
+            echo 'CI/CD + DOCKER + K8s DEPLOY SUCCESSFUL '
         }
         failure {
-            echo 'Pipeline Failed ❌'
+            echo 'PIPELINE FAILED '
         }
     }
 }
