@@ -70,18 +70,18 @@ pipeline {
 
         stage('Deploy to Kubernetes (Minikube)') {
             steps {
-                echo 'Deploying application to Kubernetes (Minikube)'
+                echo 'Resetting & Deploying to Minikube'
                 bat """
-                minikube start
-                minikube image load %FULL_IMAGE%
+                minikube delete
+                minikube start --driver=docker --force
+
+                kubectl config use-context minikube
 
                 kubectl apply -f deployment.yaml
                 kubectl apply -f services.yaml
 
                 kubectl get pods
                 kubectl get services
-
-                minikube addons enable dashboard
                 """
             }
         }
