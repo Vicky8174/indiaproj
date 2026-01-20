@@ -2,8 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: indiaproj-deployment
-  labels:
-    app: indiaproj
 spec:
   replicas: 3
   selector:
@@ -19,4 +17,4 @@ spec:
           image: holyyyycow/indiaproj:1.0
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 80
+            - containerPort: 8080
