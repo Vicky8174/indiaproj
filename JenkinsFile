@@ -10,6 +10,7 @@ pipeline {
         DOCKER_USER = 'holyyyycow'
         IMAGE_NAME  = 'indiaproj'
         IMAGE_TAG   = '1.0'
+        FULL_IMAGE  = 'holyyyycow/indiaproj:1.0'
     }
 
     stages {
@@ -31,14 +32,13 @@ pipeline {
             post {
                 always {
                     junit '**/target/surefire-reports/*.xml'
-                    echo 'Test execution completed'
                 }
             }
         }
 
         stage('Build JAR') {
             steps {
-                echo 'Packaging application (Skipping Tests)'
+                echo 'Packaging application'
                 bat 'mvn clean package -DskipTests'
             }
         }
@@ -46,7 +46,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 echo 'Building Docker image'
-                bat "docker build -t %DOCKER_USER%/%IMAGE_NAME%:%IMAGE_TAG% ."
+                bat "docker build -t %FULL_IMAGE% ."
             }
         }
 
@@ -62,7 +62,7 @@ pipeline {
                 ]) {
                     bat """
                     echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin
-                    docker push %DOCKER_USER%/%IMAGE_NAME%:%IMAGE_TAG%
+                    docker push %FULL_IMAGE%
                     """
                 }
             }
@@ -70,13 +70,18 @@ pipeline {
 
         stage('Deploy to Kubernetes (Minikube)') {
             steps {
-                echo 'Deploying application to Kubernetes using Minikube'
+                echo 'Deploying application to Kubernetes (Minikube)'
                 bat """
                 minikube start
+                minikube image load %FULL_IMAGE%
+
                 kubectl apply -f deployment.yaml
                 kubectl apply -f services.yaml
+
                 kubectl get pods
                 kubectl get services
+
+                minikube addons enable dashboard
                 """
             }
         }
@@ -84,7 +89,7 @@ pipeline {
 
     post {
         success {
-            echo 'CI/CD Pipeline executed successfully!'
+            echo 'BUILD + DOCKER + K8s DEPLOY SUCCESSFUL!'
         }
         failure {
             echo 'Pipeline failed. Please check Jenkins console logs.'
