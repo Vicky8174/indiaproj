@@ -7,10 +7,10 @@ pipeline {
     }
 
     environment {
-        DOCKERHUB_USER = "holyycow"
+        DOCKERHUB_USER = "holyyyycow"
         IMAGE_NAME = "indiaproj"
         IMAGE_TAG = "1.0"
-        FULL_IMAGE = "holyycow/indiaproj:1.0"
+        FULL_IMAGE = "holyyyycow/indiaproj:1.0"
     }
 
     stages {
