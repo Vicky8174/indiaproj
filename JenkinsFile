@@ -38,7 +38,7 @@ pipeline {
 
         stage('Build JAR') {
             steps {
-                echo 'Packaging application'
+                echo 'Packaging application (Skipping Tests)'
                 bat 'mvn clean package -DskipTests'
             }
         }
@@ -46,7 +46,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 echo 'Building Docker image'
-                bat "docker build -t %FULL_IMAGE% ."
+                bat 'docker build -t %FULL_IMAGE% .'
             }
         }
 
@@ -60,10 +60,10 @@ pipeline {
                         passwordVariable: 'DOCKER_PASSWORD'
                     )
                 ]) {
-                    bat """
+                    bat '''
                     echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin
                     docker push %FULL_IMAGE%
-                    """
+                    '''
                 }
             }
         }
@@ -71,18 +71,20 @@ pipeline {
         stage('Deploy to Kubernetes (Minikube)') {
             steps {
                 echo 'Resetting & Deploying to Minikube'
-                bat """
+                bat '''
                 minikube delete
                 minikube start --driver=docker --force
 
                 kubectl config use-context minikube
+
+                minikube image load %FULL_IMAGE%
 
                 kubectl apply -f deployment.yaml
                 kubectl apply -f services.yaml
 
                 kubectl get pods
                 kubectl get services
-                """
+                '''
             }
         }
     }
@@ -92,7 +94,7 @@ pipeline {
             echo 'BUILD + DOCKER + K8s DEPLOY SUCCESSFUL!'
         }
         failure {
-            echo 'Pipeline failed. Please check Jenkins console logs.'
+            echo 'Pipeline FAILED. Check Jenkins logs.'
         }
     }
 }
