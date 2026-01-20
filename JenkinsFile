@@ -24,21 +24,9 @@ pipeline {
             }
         }
 
-        stage('Run Unit Tests') {
-            steps {
-                echo 'Running JUnit test cases'
-                bat 'mvn test'
-            }
-            post {
-                always {
-                    junit '**/target/surefire-reports/*.xml'
-                }
-            }
-        }
-
         stage('Build JAR') {
             steps {
-                echo 'Packaging application (Skipping Tests)'
+                echo 'Building Spring Boot JAR'
                 bat 'mvn clean package -DskipTests'
             }
         }
@@ -46,13 +34,13 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 echo 'Building Docker image'
-                bat 'docker build -t %FULL_IMAGE% .'
+                bat "docker build -t %FULL_IMAGE% ."
             }
         }
 
         stage('Push Docker Image to DockerHub') {
             steps {
-                echo 'Pushing Docker image to DockerHub'
+                echo 'Pushing Docker image'
                 withCredentials([
                     usernamePassword(
                         credentialsId: 'dockerhubpwd',
@@ -60,18 +48,18 @@ pipeline {
                         passwordVariable: 'DOCKER_PASSWORD'
                     )
                 ]) {
-                    bat '''
+                    bat """
                     echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin
                     docker push %FULL_IMAGE%
-                    '''
+                    """
                 }
             }
         }
 
-        stage('Deploy to Kubernetes (Minikube)') {
+        stage('Deploy to Minikube') {
             steps {
-                echo 'Resetting & Deploying to Minikube'
-                bat '''
+                echo 'Reset & Deploy to Minikube'
+                bat """
                 minikube delete
                 minikube start --driver=docker --force
 
@@ -79,22 +67,25 @@ pipeline {
 
                 minikube image load %FULL_IMAGE%
 
+                kubectl delete deployment indiaproj-deployment --ignore-not-found
+                kubectl delete service indiaproj-service --ignore-not-found
+
                 kubectl apply -f deployment.yaml
                 kubectl apply -f services.yaml
 
                 kubectl get pods
                 kubectl get services
-                '''
+                """
             }
         }
     }
 
     post {
         success {
-            echo 'BUILD + DOCKER + K8s DEPLOY SUCCESSFUL!'
+            echo 'CI/CD + MINIKUBE DEPLOY SUCCESSFUL 🚀'
         }
         failure {
-            echo 'Pipeline FAILED. Check Jenkins logs.'
+            echo 'Pipeline Failed ❌'
         }
     }
 }

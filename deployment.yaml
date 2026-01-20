@@ -15,7 +15,8 @@ spec:
         app: indiaproj
     spec:
       containers:
-      - name: indiaproj-container
-        image: holyyyycow/indiaproj:latest
-        ports:
-        - containerPort: 80
+        - name: indiaproj-container
+          image: holyyyycow/indiaproj:1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
